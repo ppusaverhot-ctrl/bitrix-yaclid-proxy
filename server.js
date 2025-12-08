@@ -58,15 +58,12 @@ try {
     const existingLeadId = await findLeadByClientId(client_id);
 
     if (existingLeadId) {
-     console.log([code]🔁 Лид с client_id=${client_id} уже существует (ID: ${existingLeadId})
-);
+     console.log('🔁 Лид с client_id=' + client_id + ' уже существует (ID: ' + existingLeadId + ')');
      return res.json({ success: true, leadId: existingLeadId, message: 'Лид уже существует, дубликат не создан' });
     }
 
     const newLeadId = await createLead(client_id);
-    console.log(
-✅ Новый лид создан: ID=${newLeadId}, client_id=${client_id}
-);
+    console.log('✅ Новый лид создан: ID=' + newLeadId + ', client_id=' + client_id);
     res.json({ success: true, leadId: newLeadId });
 
 } catch (error) {
@@ -77,7 +74,5 @@ try {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-console.log(
-🚀 Прокси-сервер запущен на порту ${PORT}
-);
-});[/code]
+console.log('🚀 Прокси-сервер запущен на порту ' + PORT);
+});
