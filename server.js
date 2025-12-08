@@ -3,6 +3,20 @@ const axios = require('axios');
 const app = express();
 app.use(express.json());
 
+// 🔐 CORS — разрешаем запросы только с saverhot.ru
+app.use((req, res, next) => {
+res.header('Access-Control-Allow-Origin', 'https://saverhot.ru');
+res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+res.header('Access-Control-Allow-Headers', 'Content-Type');
+
+if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+    return;
+}
+
+next();
+});
+
 // 🔐 Получаем значения из переменных окружения (Render)
 const BITRIX_WEBHOOK_URL = process.env.BITRIX_WEBHOOK_URL;
 const CUSTOM_FIELD_ID = process.env.CUSTOM_FIELD_ID;
