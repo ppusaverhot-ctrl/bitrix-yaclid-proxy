@@ -41,19 +41,32 @@ try {
 }
 }
 
-async function createLead(clientId) {
+async function createLead(clientId, email, phone) {
 try {
-    const response = await axios.post(BITRIX_WEBHOOK_URL + 'crm.lead.add', {
-     fields: {
-        TITLE: 'Лид с YaCID',
-        NAME: 'Автоматический лид',
-        SOURCE_ID: 'WEB',
-        SOURCE_DESCRIPTION: 'YaMetrika client_id',
-        CUSTOM_FIELDS: {
-         [CUSTOM_FIELD_ID]: clientId
-        }
+    const fields = {
+     TITLE: 'Лид с YaCID',
+     NAME: 'Автоматический лид',
+     SOURCE_ID: 'WEB',
+     SOURCE_DESCRIPTION: 'YaMetrika client_id',
+     CUSTOM_FIELDS: {
+        [CUSTOM_FIELD_ID]: clientId
      }
+    };
+
+    // Добавляем email, если есть
+    if (email) {
+     fields.EMAIL = [{ VALUE: email.trim(), VALUE_TYPE: 'WORK' }];
+    }
+
+    // Добавляем телефон, если есть
+    if (phone) {
+     fields.PHONE = [{ VALUE: phone.trim().replace(/\D/g, ''), VALUE_TYPE: 'WORK' }];
+    }
+
+    const response = await axios.post(BITRIX_WEBHOOK_URL + 'crm.lead.add', {
+     fields: fields
     });
+
     return response.data.result;
 } catch (error) {
     console.error('Ошибка при создании лида:', error.response?.data || error.message);
@@ -62,10 +75,20 @@ try {
 }
 
 app.post('/send-yaclid', async (req, res) => {
-const { client_id } = req.body;
+const { client_id, email, phone } = req.body;
 
+// 🔒 Проверка: нужен хотя бы один контакт — email или phone
 if (!client_id) {
     return res.status(400).json({ success: false, error: 'client_id не передан' });
+}
+
+if (!email && !phone) {
+    console.log('⚠️ Запрос отклонён: нет email или phone для client_id:', client_id);
+    return res.status(200).json({
+     success: true,
+     message: 'Лид не создан — нет email или телефона',
+     leadId: null
+    });
 }
 
 try {
@@ -73,12 +96,19 @@ try {
 
     if (existingLeadId) {
      console.log('🔁 Лид с client_id=' + client_id + ' уже существует (ID: ' + existingLeadId + ')');
-     return res.json({ success: true, leadId: existingLeadId, message: 'Лид уже существует, дубликат не создан' });
+     return res.json({
+        success: true,
+        leadId: existingLeadId,
+        message: 'Лид уже существует, дубликат не создан'
+     });
     }
 
-    const newLeadId = await createLead(client_id);
+    const newLeadId = await createLead(client_id, email, phone);
     console.log('✅ Новый лид создан: ID=' + newLeadId + ', client_id=' + client_id);
-    res.json({ success: true, leadId: newLeadId });
+    res.json({
+     success: true,
+     leadId: newLeadId
+    });
 
 } catch (error) {
     console.error('❌ Ошибка при обработке запроса:', error);
